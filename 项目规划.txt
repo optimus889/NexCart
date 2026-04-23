@@ -1,0 +1,429 @@
+一、建议最终做成的系统版本
+
+1. 核心电商功能
+
+* 用户注册 / 登录 / 登出
+* 商品浏览
+* 购物车
+    * 增减数量
+    * 删除商品
+    * 实时计算总价
+* 支付下单
+* 订单历史
+* 商家商品管理
+    * 新增商品
+    * 编辑商品
+    * 删除商品
+    * 上下架商品
+* 商家订单管理
+    * 查看订单
+    * 修改订单状态
+* 管理员平台总览
+    * 用户数
+    * 商品数
+    * 订单数
+    * 总交易额
+    * 告警数
+
+2. 安全与权限
+
+* JWT 登录认证
+* token 过期
+* 基于角色的权限控制
+    * consumer
+    * merchant
+    * admin
+* 登录失败限制
+* 验证码
+* 输入校验
+* 后端接口权限保护
+* 基础审计日志
+
+3. 数据与持久化
+
+* 数据库存储
+* 用户、商品、购物车、订单、告警、日志全部持久化
+* 不再用内存数组
+
+4. 实时功能
+
+* WebSocket
+* 新订单实时推送给商家
+* 新告警实时推送给管理员
+* 订单状态更新实时同步
+
+⸻
+
+二、建议技术栈
+
+推荐：
+
+前端
+
+* React
+* 你现在已有的 UI 组件
+* fetch 或 axios
+* socket.io-client
+
+后端
+
+* Node.js
+* Express
+* socket.io
+* JWT
+* bcrypt
+* express-validator
+
+数据库
+
+推荐：
+
+MongoDB
+
+优点：
+
+* 快
+* 好上手
+* 文档型很适合商品 / 订单 / 告警
+
+
+三、数据库表 / 集合设计
+
+Users
+
+* id
+* username
+* passwordHash
+* role
+* fullName
+* email
+* isActive
+* failedLoginCount
+* createdAt
+
+Products
+
+* id
+* name
+* price
+* stock
+* status
+* category
+* description
+* createdByMerchantId
+* createdAt
+* updatedAt
+
+Carts
+
+* id
+* userId
+* items[]
+    * productId
+    * quantity
+
+Orders
+
+* id
+* userId
+* items[]
+    * productId
+    * productName
+    * price
+    * quantity
+    * merchantId
+* subtotal
+* platformFee
+* total
+* status
+* billingAddress
+* paymentMethod
+* createdAt
+* updatedAt
+
+Alerts
+
+* id
+* level
+* title
+* message
+* status
+* createdAt
+
+AuditLogs
+
+* id
+* userId
+* role
+* action
+* targetType
+* targetId
+* timestamp
+* ip
+
+⸻
+
+四、权限设计
+
+Consumer
+
+可以访问：
+
+* 商品
+* 购物车
+* 支付
+* 订单历史
+* 个人信息
+
+不可以访问：
+
+* 商家商品管理
+* 商家订单管理
+* 管理员后台
+
+Merchant
+
+可以访问：
+
+* 商品管理
+* 商家订单
+* 钱包
+* 商家个人信息
+
+不可以访问：
+
+* 消费者支付页
+* 管理员后台
+
+Admin
+
+可以访问：
+
+* 平台总览
+* 告警管理
+* 用户管理
+* 所有订单
+* 所有商品
+
+不可以访问：
+
+* 消费者下单页
+* 商家钱包操作页
+
+⸻
+
+五、验证码功能建议
+
+登录界面可以做一个简单但可展示的验证码。
+
+前端
+
+* 登录页增加：
+    * 验证码图片 / 文本
+    * 输入框
+    * 刷新验证码按钮
+
+后端
+
+* 新增接口：
+    * GET /api/auth/captcha
+    * 返回验证码 challenge
+* 登录时校验验证码：
+    * POST /api/auth/login
+
+简化做法
+
+你可以先做成：
+
+* 后端生成 6 位随机字符串
+* 存 session / memory / Redis
+* 前端输入后提交
+* 校验通过才允许登录
+
+这样已经足够展示“登录安全控制”。
+
+⸻
+
+六、WebSocket 实时功能建议
+
+1. 实时订单更新
+
+场景：
+
+* 消费者下单后
+* 商家端订单页面实时收到新订单
+
+2. 实时订单状态更新
+
+场景：
+
+* 商家把订单改成 Shipped
+* 消费者 Orders 页实时看到状态变化
+
+3. 实时告警
+
+场景：
+
+* 登录失败次数太多
+* 库存不足
+* 接口异常
+* 管理员端实时收到 alert
+
+⸻
+
+七、需要新增的后端接口清单
+
+Auth
+
+* POST /api/auth/register
+* GET /api/auth/captcha
+* POST /api/auth/login
+* POST /api/auth/logout
+* GET /api/auth/me
+
+Consumer
+
+* GET /api/products
+* GET /api/cart
+* POST /api/cart/items
+* PATCH /api/cart/items/:productId
+* DELETE /api/cart/items/:productId
+* POST /api/customer/orders
+* GET /api/customer/orders
+
+Merchant
+
+* GET /api/merchant/products
+* POST /api/merchant/products
+* PATCH /api/merchant/products/:id
+* DELETE /api/merchant/products/:id
+* PATCH /api/merchant/products/:id/toggle
+* GET /api/merchant/orders
+* PATCH /api/merchant/orders/:id/status
+* GET /api/merchant/wallet
+* POST /api/merchant/wallet/withdraw
+* POST /api/merchant/wallet/receive
+
+Admin
+
+* GET /api/admin/dashboard
+* GET /api/admin/users
+* PATCH /api/admin/users/:id/status
+* GET /api/admin/orders
+* GET /api/admin/products
+* GET /api/admin/alerts
+* PATCH /api/admin/alerts/:id/resolve
+
+Realtime
+
+* socket: order.created
+* socket: order.updated
+* socket: alert.created
+
+⸻
+
+八、管理员平台能力建议
+
+Dashboard 卡片
+
+* Total Users
+* Total Products
+* Total Orders
+* Total Revenue
+* Open Alerts
+
+管理页面
+
+* Users
+* Orders
+* Products
+* Alerts
+* Audit Logs
+
+⸻
+
+九、登录安全建议
+
+基础版
+
+* 密码哈希 bcrypt
+* JWT
+* 验证码
+* 登录失败 5 次锁定 10 分钟
+
+进阶版
+
+* IP 记录
+* 登录日志
+* 异常行为告警
+* token 黑名单 / refresh token
+
+⸻
+
+十、建议开发顺序
+
+为了能真正做出来，我建议按这个顺序，不要同时乱写。
+
+Phase 1：数据持久化
+
+* 接数据库
+* 建 User / Product / Order / Alert 模型
+
+Phase 2：认证与安全
+
+* JWT
+* bcrypt
+* 验证码
+* 登录失败限制
+* RBAC 中间件
+
+Phase 3：核心电商
+
+* 购物车
+* 下单
+* 订单历史
+* 商家订单管理
+* 商品增删改查
+
+Phase 4：管理员后台
+
+* dashboard 统计
+* 用户管理
+* alerts
+* logs
+
+Phase 5：实时功能
+
+* socket.io
+* 新订单实时推送
+* 订单状态实时更新
+* 实时告警
+
+⸻
+
+十一、你现在最应该先做的
+
+第一批必须补
+
+* MongoDB / PostgreSQL 持久化
+* JWT + bcrypt
+* 验证码登录
+* 购物车增减删
+* 商家订单页面
+* 管理员统计接口
+
+第二批再补
+
+* 登录失败限制
+* 审计日志
+* WebSocket 实时订单
+* 实时告警
+
+⸻
+
+十二、建议的实际交付目标
+
+最终你可以把项目讲成：
+
+NexCart is a cloud-oriented e-commerce platform demo with multi-role access control, secure authentication, persistent storage, administrator monitoring, and real-time order and alert updates.
+
