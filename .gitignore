@@ -1,5 +1,45 @@
-target/
-.idea/
-*.iml
+# dependencies
+node_modules/
+**/node_modules/
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# build outputs
+dist/
+build/
+.vite/
+**/.vite/
+
+# logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# system files
 .DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# AWS / EB local files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+# misc
+coverage/
+
+# MongoDB local database / backups
+dump/
+mongodb-backup/
+database/backups/
+database/exports/
+*.bson
+*.metadata.json
