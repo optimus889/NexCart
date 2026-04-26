@@ -13,7 +13,15 @@ import awsRoutes from "./routes/awsRoutes.js";
 
 const app = express();
 
-app.use(cors());
+const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {

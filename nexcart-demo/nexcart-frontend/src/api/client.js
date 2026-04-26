@@ -1,6 +1,9 @@
 import { getToken } from "@/utils/token";
 
-export const API_BASE = "http://localhost:4000/api";
+export const API_BASE =
+  import.meta.env.VITE_USE_AWS_API_GATEWAY === "true"
+    ? import.meta.env.VITE_AWS_API_GATEWAY_URL
+    : import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
 
 export async function apiRequest(path, options = {}) {
   const token = getToken();
